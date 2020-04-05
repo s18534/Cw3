@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Cw3.Models;
 using Cw3.DAL;
+using System.Data.SqlClient;
 
 namespace Cw3.Controllers
 {
@@ -15,21 +16,70 @@ namespace Cw3.Controllers
     {
         private readonly IDbService _dbService;
 
-        public string GetStudent(string orderBy)
+        [HttpGet]
+        public IActionResult GetStudents()
         {
-            return $"Kowalski, Malewski, Andrzejewski sortowanie={orderBy}";
+
+            List<Student> students = new List<Student>();
+
+            using (var client = new SqlConnection("Data Source=db-mssql;Initial Catalog=s18534;Integrated Security=True"))
+            using (var com = new SqlCommand())
+            {
+                com.Connection = client;
+                com.CommandText = "SELECT *  FROM Student" +
+                    " INNER JOIN Enrollment ON Student.IdEnrollment=Enrollment.IdEnrollment" +
+                    "  INNER JOIN Studies ON Enrollment.IdStudy=Studies.IdStudy";
+
+                client.Open();
+                var dr = com.ExecuteReader();
+                while (dr.Read())
+                {
+                    var st = new Student()
+                    {
+                        FirstName = dr["FirstName"].ToString(),
+                        LastName = dr["LastName"].ToString(),
+                        IndexNumber = dr["IndexNumber"].ToString(),
+                        DateOfBirth = DateTime.Parse(dr["BirthDate"].ToString()).ToShortDateString(),
+                        Studies = dr["Name"].ToString(),
+                        Semestr = int.Parse(dr["Semester"].ToString())
+                    };
+                    students.Add(st);
+                }
+            }
+            return Ok(students);
+        }
+        [HttpGet("{indexNum}")]
+        public IActionResult GetStudent(string indexNum)
+        {
+            using (var client = new SqlConnection("Data Source=db-mssql;Initial Catalog=s18534;Integrated Security=True"))
+            using (var com = new SqlCommand())
+            {
+                com.Connection = client;
+                com.CommandText = "SELECT *  FROM Student" +
+                    " INNER JOIN Enrollment ON Student.IdEnrollment=Enrollment.IdEnrollment" +
+                    "  INNER JOIN Studies ON Enrollment.IdStudy=Studies.IdStudy WHERE IndexNumber=@index";
+
+                com.Parameters.AddWithValue("index", indexNum);
+                Console.WriteLine("SIUR");
+                client.Open();
+                var dr = com.ExecuteReader();
+                if (dr.Read())
+                {
+                    var st = new Student()
+                    {
+                        FirstName = dr["FirstName"].ToString(),
+                        LastName = dr["LastName"].ToString(),
+                        IndexNumber = dr["IndexNumber"].ToString(),
+                        DateOfBirth = DateTime.Parse(dr["BirthDate"].ToString()).ToShortDateString(),
+                        Studies = dr["Name"].ToString(),
+                        Semestr = int.Parse(dr["Semester"].ToString())
+                    };
+                    return Ok(st);
+                }
+            }
+            return NotFound();
         }
 
-        [HttpGet("{id}")]
-        public IActionResult GetStudent(int id)
-        {
-            if (id == 1)
-                return Ok("Kowalski");
-            else if (id == 2)
-                return Ok("Malewski");
-
-            return NotFound("Nie znaleziono studenta");
-        }
 
         [HttpPost]
         public IActionResult CreateStudent([FromBody]Student student)
@@ -55,7 +105,6 @@ namespace Cw3.Controllers
             _dbService = dbService;
         }
 
-        [HttpGet]
         public IActionResult GetStudents(string orderBy)
         {
             return Ok(_dbService.GetStudents());

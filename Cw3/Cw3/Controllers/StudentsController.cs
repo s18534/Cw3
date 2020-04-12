@@ -39,7 +39,7 @@ namespace Cw3.Controllers
                         FirstName = dr["FirstName"].ToString(),
                         LastName = dr["LastName"].ToString(),
                         IndexNumber = dr["IndexNumber"].ToString(),
-                        DateOfBirth = DateTime.Parse(dr["BirthDate"].ToString()).ToShortDateString(),
+                        DateOfBirth = DateTime.Parse(dr["BirthDate"].ToString()),
                         Studies = dr["Name"].ToString(),
                         Semestr = int.Parse(dr["Semester"].ToString())
                     };
@@ -69,7 +69,7 @@ namespace Cw3.Controllers
                         FirstName = dr["FirstName"].ToString(),
                         LastName = dr["LastName"].ToString(),
                         IndexNumber = dr["IndexNumber"].ToString(),
-                        DateOfBirth = DateTime.Parse(dr["BirthDate"].ToString()).ToShortDateString(),
+                        DateOfBirth = DateTime.Parse(dr["BirthDate"].ToString()),
                         Studies = dr["Name"].ToString(),
                         Semestr = int.Parse(dr["Semester"].ToString())
                     };

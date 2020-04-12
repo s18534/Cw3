@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Cw3.DAL;
+using Cw3.Services;
 
 namespace Cw3
 {
@@ -27,6 +28,8 @@ namespace Cw3
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<IDbService, MockDbService>();
+            services.AddControllers();
+            services.AddTransient<IStudentDbService, SqlServerDbService>();
             services.AddControllers();
         }
 

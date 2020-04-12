@@ -1,0 +1,23 @@
+CREATE PROCEDURE PromoteStudents @Studies NVARCHAR(100), @Semester INT
+AS
+BEGIN 
+	DECLARE @IdStudies INT = (SELECT IdStudy FROM Studies WHERE Name = @Studies);
+	IF @IdStudies IS NULL
+	BEGIN
+		RAISERROR('Brak studiow', 11, 1);
+	END
+	DECLARE @actId INT = (SELECT IdEnrollment FROM Enrollment WHERE IdStudy = @IdStudies);
+	DECLARE @tempo INT = (SELECT Semester FROM Enrollment WHERE IdStudy = @IdStudies), @idenrol INT;
+	IF @tempo = @Semester
+		BEGIN
+		SET @idenrol = (SELECT IdEnrollment FROM Enrollment WHERE IdStudy = @IdStudies);
+		END
+	ELSE
+		BEGIN
+		DECLARE @temp INT = (SELECT MAX(IdEnrollment)+1 FROM Enrollment);
+		INSERT INTO Enrollment(IdEnrollment,Semester,IdStudy,StartDate) VALUES(@temp, @Semester + 1, @Studies, GETDATE())
+		SET @idenrol = @temp
+		END
+
+	UPDATE Student SET IdEnrollment = @idenrol WHERE IdEnrollment = @actId;
+END;

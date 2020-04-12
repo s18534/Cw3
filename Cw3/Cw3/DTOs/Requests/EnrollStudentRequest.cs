@@ -12,7 +12,7 @@ namespace Cw3.DTOs.Requests
         public string FirstName { get; set; }
         [Required]
         public string LastName { get; set; }
-        [RegularExpression("^s[0-9]+$")]
+        
         public string IndexNumber { get; set; }
         [Required]
         public DateTime DateOfBirth { get; set; }

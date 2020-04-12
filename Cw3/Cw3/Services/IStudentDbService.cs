@@ -9,6 +9,6 @@ namespace Cw3.Services
     public interface IStudentDbService
     {
         public EnrollStudentResponse EnrollStudent(EnrollStudentRequest request);
-        public EnrollStudentResponse PromoteStudents(PromoteStudentRequest request);
+        public EnrollStudentResponse PromoteStudent(PromoteStudentRequest request);
     }
 }

@@ -12,7 +12,7 @@ using System.Data.SqlClient;
 
 namespace Cw3.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/enrollments")]
     [ApiController]
     public class EnrollmentsController : ControllerBase
     {
@@ -23,42 +23,28 @@ namespace Cw3.Controllers
             _service = service;
         }
 
-
-        
-
         [HttpPost]
         public IActionResult EnrollStudent(EnrollStudentRequest request)
         {
-
+            try
+            {
+                return Ok(_service.EnrollStudent(request));
+            }catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost("promotions")]
         public IActionResult PromoteStudent(PromoteStudentRequest request)
         {
-            using (var connection = new SqlConnection(connectionString))
-            using (var command = new SqlCommand())
+            try
             {
-                command.Connection = connection;
-                connection.Open();
-
-                command.CommandText = "exec PromoteStudents @stud,@sem";
-                command.Parameters.AddWithValue("stud", request.Studies);
-                command.Parameters.AddWithValue("sem", request.Semester);
-
-                var read = command.ExecuteReader();
-                if (read.Read())
-                {
-                    EnrollStudentResponse response = new EnrollStudentResponse
-                    {
-                        IdEnroll = (int)read["IdEnrollment"],
-                        Semester = (int)read["Semester"],
-                        Study = (int)read["IdStudy"],
-                        Date = DateTime.Parse(read["StartDate"].ToString())
-                    };
-                    return Ok(response);
-                }
+                return Ok(_service.PromoteStudent(request));
+            }catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
             }
-            return NotFound();
         }
 
     }

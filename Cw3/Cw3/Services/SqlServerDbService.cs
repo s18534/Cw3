@@ -2,6 +2,7 @@
 using Cw3.DTOs.Responses;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -14,21 +15,20 @@ namespace Cw3.Services
 
         public EnrollStudentResponse EnrollStudent(EnrollStudentRequest request)
         {
-             using(var connection = new SqlConnection(connectionString))
+            using(var connection = new SqlConnection(connectionString))
             using(var command = new SqlCommand())
             {
 
                 command.Connection = connection;
 
                 connection.Open();
-                var transaction = connection.BeginTransaction();
 
-                command.CommandText = "SELECT IdStudies FROM studies WHERE name=@name";
+                command.CommandText = "SELECT IdStudy FROM studies WHERE name=@name";
                 command.Parameters.AddWithValue("name", request.Studies);
 
                 var read = command.ExecuteReader();
                 if (!read.Read())
-                    BadRequest("No such studies");
+                    throw new Exception("No such studies");
 
                 int idStudies = (int) read["IdStudy"];
                 read.Close();
@@ -36,8 +36,9 @@ namespace Cw3.Services
                 command.CommandText = "SELECT * FROM Student WHERE IndexNumber=@index";
                 command.Parameters.AddWithValue("index", request.IndexNumber);
 
+                read = command.ExecuteReader();
                 if (read.Read())
-                    BadRequest("IndexNumber not unique");
+                    throw new Exception("IndexNumber not unique");
 
                 read.Close();
 
@@ -45,6 +46,7 @@ namespace Cw3.Services
                 command.Parameters.AddWithValue("idStudy", idStudies);
                 command.Parameters.AddWithValue("semester", 1);
                 int idEnroll = 1;
+                DateTime dateTime = DateTime.Now;
                 read = command.ExecuteReader();
                 if (!read.Read())
                 {
@@ -54,35 +56,65 @@ namespace Cw3.Services
                     read = command.ExecuteReader();
                     if (read.Read())
                         idEnroll = (int)read["maximus"] + 1;
-
+                    
                     read.Close();
-
+                    Console.WriteLine(idEnroll);
                     command.CommandText = "INSERT INTO Enrollment(IdEnrollment,Semester,IdStudy,StartDate) VALUES(@id, @sem, @idstud, @date)";
                     command.Parameters.AddWithValue("@id", idEnroll);
                     command.Parameters.AddWithValue("@sem", 1);
                     command.Parameters.AddWithValue("@idstud", idStudies);
-                    command.Parameters.AddWithValue("@date", DateTime.Now);
+                    command.Parameters.AddWithValue("@date", dateTime);
                 }
                 else
-                    idEnroll = (int) read["IdEnrollment"];
+                {
+                    idEnroll = (int)read["IdEnrollment"];
+                    dateTime = (DateTime)read["StartDate"];
+                }
                 read.Close();
-
-                command.CommandText = "INSERT INTO Student(IndexNumber,FirstName,LastName,BirthDate,IdEnrollment) VALUES(@index, @firna, @laname, @date, @enroll";
-                command.Parameters.AddWithValue("index", request.IndexNumber);
+                command.CommandText = "INSERT INTO Student(IndexNumber,FirstName,LastName,BirthDate,IdEnrollment) VALUES(@indx, @firna, @laname, @date, @idEnrol)";
+                command.Parameters.AddWithValue("indx", request.IndexNumber);
                 command.Parameters.AddWithValue("firna", request.FirstName);
                 command.Parameters.AddWithValue("laname", request.LastName);
                 command.Parameters.AddWithValue("date", request.DateOfBirth);
-                command.Parameters.AddWithValue("enroll", idEnroll);
+                command.Parameters.AddWithValue("idEnrol", idEnroll);
                 command.ExecuteNonQuery();
-                transaction.Commit();
-                
+
+                return new EnrollStudentResponse()
+                {
+                    IdEnroll = idEnroll,
+                    Semester = 1,
+                    Study = idStudies,
+                    Date = dateTime
+                };
             }
-            return Ok();
         }
 
-        public EnrollStudentResponse PromoteStudents(PromoteStudentRequest request)
+        public EnrollStudentResponse PromoteStudent(PromoteStudentRequest request)
         {
-            throw new NotImplementedException();
+            using (var connection = new SqlConnection(connectionString))
+            using (var command = new SqlCommand())
+            {
+                command.Connection = connection;
+                connection.Open();
+
+                command.CommandText = "exec PromoteStudents @stud,@sem";
+                command.Parameters.AddWithValue("stud", request.Studies);
+                command.Parameters.AddWithValue("sem", request.Semester);
+
+                var read = command.ExecuteReader();
+                if (read.Read())
+                {
+                    EnrollStudentResponse response = new EnrollStudentResponse
+                    {
+                        IdEnroll = (int)read["IdEnrollment"],
+                        Semester = (int)read["Semester"],
+                        Study = (int)read["IdStudy"],
+                        Date = DateTime.Parse(read["StartDate"].ToString())
+                    };
+                    return response;
+                }
+            }
+            throw new Exception("Exception");
         }
     }
 }

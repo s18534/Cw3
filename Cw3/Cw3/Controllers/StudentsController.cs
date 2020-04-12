@@ -60,7 +60,6 @@ namespace Cw3.Controllers
                     "  INNER JOIN Studies ON Enrollment.IdStudy=Studies.IdStudy WHERE IndexNumber=@index";
 
                 com.Parameters.AddWithValue("index", indexNum);
-                Console.WriteLine("SIUR");
                 client.Open();
                 var dr = com.ExecuteReader();
                 if (dr.Read())

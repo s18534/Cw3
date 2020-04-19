@@ -5,13 +5,77 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
-
+using Cw3.Models;
 namespace Cw3.Services
 {
     public class SqlServerDbService : IStudentDbService
     {
 
         string connectionString = "Data Source=db-mssql;Initial Catalog=s18534;Integrated Security=True";
+
+        
+        public IEnumerable<Student> GetStudents()
+        {
+
+            List<Student> students = new List<Student>();
+
+            using (var client = new SqlConnection("Data Source=db-mssql;Initial Catalog=s18534;Integrated Security=True"))
+            using (var com = new SqlCommand())
+            {
+                com.Connection = client;
+                com.CommandText = "SELECT *  FROM Student" +
+                    " INNER JOIN Enrollment ON Student.IdEnrollment=Enrollment.IdEnrollment" +
+                    "  INNER JOIN Studies ON Enrollment.IdStudy=Studies.IdStudy";
+
+                client.Open();
+                var dr = com.ExecuteReader();
+                while (dr.Read())
+                {
+                    var st = new Student()
+                    {
+                        FirstName = dr["FirstName"].ToString(),
+                        LastName = dr["LastName"].ToString(),
+                        IndexNumber = dr["IndexNumber"].ToString(),
+                        DateOfBirth = DateTime.Parse(dr["BirthDate"].ToString()),
+                        Studies = dr["Name"].ToString(),
+                        Semestr = int.Parse(dr["Semester"].ToString())
+                    };
+                    students.Add(st);
+                }
+            }
+           return students;
+        }
+        
+        public Student GetStudent(string indexNum)
+        {
+            using (var client = new SqlConnection("Data Source=db-mssql;Initial Catalog=s18534;Integrated Security=True"))
+            using (var com = new SqlCommand())
+            {
+                com.Connection = client;
+                com.CommandText = "SELECT *  FROM Student" +
+                    " INNER JOIN Enrollment ON Student.IdEnrollment=Enrollment.IdEnrollment" +
+                    "  INNER JOIN Studies ON Enrollment.IdStudy=Studies.IdStudy WHERE IndexNumber=@index";
+
+                com.Parameters.AddWithValue("index", indexNum);
+                client.Open();
+                var dr = com.ExecuteReader();
+                if (dr.Read())
+                {
+                    var st = new Student()
+                    {
+                        FirstName = dr["FirstName"].ToString(),
+                        LastName = dr["LastName"].ToString(),
+                        IndexNumber = dr["IndexNumber"].ToString(),
+                        DateOfBirth = DateTime.Parse(dr["BirthDate"].ToString()),
+                        Studies = dr["Name"].ToString(),
+                        Semestr = int.Parse(dr["Semester"].ToString())
+                    };
+                    return st;
+                }
+            }
+            return null;
+        }
+
 
         public EnrollStudentResponse EnrollStudent(EnrollStudentRequest request)
         {

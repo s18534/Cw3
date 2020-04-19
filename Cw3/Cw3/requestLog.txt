@@ -1,0 +1,4 @@
+Path: /api/students/secured 
+QueryString: 
+Method: GET 
+Body Parameters: 

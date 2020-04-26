@@ -1,4 +1,7 @@
-Path: /api/students/secured 
+Path: /api/enrollments/login 
 QueryString: 
-Method: GET 
-Body Parameters: 
+Method: POST 
+Body Parameters: {
+	"Login": "s1112",
+	"Haslo": "Misiek"
+}

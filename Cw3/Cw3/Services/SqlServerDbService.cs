@@ -6,6 +6,9 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using Cw3.Models;
+using Cw3.Procedure;
+using System.Security.Claims;
+
 namespace Cw3.Services
 {
     public class SqlServerDbService : IStudentDbService
@@ -13,7 +16,7 @@ namespace Cw3.Services
 
         string connectionString = "Data Source=db-mssql;Initial Catalog=s18534;Integrated Security=True";
 
-        
+
         public IEnumerable<Student> GetStudents()
         {
 
@@ -43,9 +46,9 @@ namespace Cw3.Services
                     students.Add(st);
                 }
             }
-           return students;
+            return students;
         }
-        
+
         public Student GetStudent(string indexNum)
         {
             using (var client = new SqlConnection("Data Source=db-mssql;Initial Catalog=s18534;Integrated Security=True"))
@@ -79,8 +82,8 @@ namespace Cw3.Services
 
         public EnrollStudentResponse EnrollStudent(EnrollStudentRequest request)
         {
-            using(var connection = new SqlConnection(connectionString))
-            using(var command = new SqlCommand())
+            using (var connection = new SqlConnection(connectionString))
+            using (var command = new SqlCommand())
             {
 
                 command.Connection = connection;
@@ -94,7 +97,7 @@ namespace Cw3.Services
                 if (!read.Read())
                     throw new Exception("No such studies");
 
-                int idStudies = (int) read["IdStudy"];
+                int idStudies = (int)read["IdStudy"];
                 read.Close();
 
                 command.CommandText = "SELECT * FROM Student WHERE IndexNumber=@index";
@@ -120,7 +123,7 @@ namespace Cw3.Services
                     read = command.ExecuteReader();
                     if (read.Read())
                         idEnroll = (int)read["maximus"] + 1;
-                    
+
                     read.Close();
                     Console.WriteLine(idEnroll);
                     command.CommandText = "INSERT INTO Enrollment(IdEnrollment,Semester,IdStudy,StartDate) VALUES(@id, @sem, @idstud, @date)";
@@ -179,6 +182,93 @@ namespace Cw3.Services
                 }
             }
             throw new Exception("Exception");
+        }
+
+        public bool CheckPassword(LoginRequestDto request)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            using (var command = new SqlCommand())
+            {
+                command.Connection = connection;
+                connection.Open();
+
+                command.CommandText = "SELECT Password,Salt FROM Student WHERE IndexNumber=@number";
+                command.Parameters.AddWithValue("number", request.Login);
+
+                using var read = command.ExecuteReader();
+
+                if (read.Read())
+                {
+                    return PasswordSalt.Validate(request.Haslo, read["Salt"].ToString(), read["Password"].ToString());
+                }
+                return false;
+            }
+        }
+
+        public Claim[] GetClaims(string IndexNumber)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            using (var command = new SqlCommand())
+            {
+                command.Connection = connection;
+                connection.Open();
+
+                command.CommandText = "select IndexNumber,FirstName,LastName,Rola from S_Rola sr Join Uprawnienia u on sr.Rola_IdRola = u.IdRola join Student s on s.IndexNumber = sr.Student_IndexNumber where s.IndexNumber=@index";
+                command.Parameters.AddWithValue("index", IndexNumber);
+
+                var read = command.ExecuteReader();
+
+                if (read.Read())
+                {
+                    var claimList = new List<Claim>();
+                    claimList.Add(new Claim(ClaimTypes.NameIdentifier, read["IndexNumber"].ToString()));
+                    claimList.Add(new Claim(ClaimTypes.Name, read["FirstName"].ToString() + " " + read["LastName"].ToString()));
+                    claimList.Add(new Claim(ClaimTypes.Role, read["Role"].ToString()));
+
+                    while (read.Read())
+                    {
+                        claimList.Add(new Claim(ClaimTypes.Role, read["Role"].ToString()));
+                    }
+                    return claimList.ToArray<Claim>();
+                }
+                else return null;
+            }
+        }
+
+        public void SetRefreshToken(string refreshToken, string IndexNumber)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            using (var command = new SqlCommand())
+            {
+                command.Connection = connection;
+                connection.Open();
+
+                command.CommandText = "update student set token = @token where IndexNumber = @IndexNumber";
+                command.Parameters.AddWithValue("token", refreshToken);
+                command.Parameters.AddWithValue("IndexNumber", IndexNumber);
+                command.ExecuteNonQuery();
+
+            }
+        }
+
+        public string CheckRefreshToken(string refreshToken)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            using (var command = new SqlCommand())
+            {
+                command.Connection = connection;
+                connection.Open();
+                Console.WriteLine(refreshToken);
+                command.CommandText = "SELECT IndexNumber FROM Student WHERE token = @token";
+                command.Parameters.AddWithValue("token", refreshToken);
+
+                var read = command.ExecuteReader();
+
+                if (read.Read())
+                    return read["IndexNumber"].ToString();
+                else
+                    return "brak";
+            }
         }
     }
 }

@@ -15,6 +15,9 @@ using Cw3.Services;
 using Microsoft.OpenApi.Models;
 using Cw3.Middleware;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace Cw3
 {
@@ -34,6 +37,19 @@ namespace Cw3
             services.AddControllers();
             services.AddTransient<IStudentDbService, SqlServerDbService>();
             services.AddControllers();
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+           {
+               options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+               {
+                   ValidateIssuer = true,
+                   ValidateAudience = true,
+                   ValidateLifetime = true,
+                   ValidIssuer = "Gakko",
+                   ValidAudience = "Students",
+                   IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["SecretKey"]))
+               };
+           });
 
             services.AddSwaggerGen(config =>
             {
@@ -83,7 +99,7 @@ namespace Cw3
             app.UseHttpsRedirection();
 
             app.UseRouting();
-
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
